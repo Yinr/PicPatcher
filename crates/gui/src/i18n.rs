@@ -68,6 +68,10 @@ pub struct Texts {
     pub total: &'static str,
     pub log: &'static str,
     pub running_in_place: &'static str,
+    pub confirm_in_place_title: &'static str,
+    pub confirm_in_place_message: &'static str,
+    pub confirm_in_place_continue: &'static str,
+    pub cancel: &'static str,
     pub config_load_failed: &'static str,
     pub fatal: &'static str,
 }
@@ -125,6 +129,10 @@ static EN: Texts = Texts {
     total: "total",
     log: "Log:",
     running_in_place: "Running in-place (originals will be overwritten).",
+    confirm_in_place_title: "Confirm overwrite",
+    confirm_in_place_message: "This will overwrite original files in the input directory. This cannot be undone. Continue?",
+    confirm_in_place_continue: "Overwrite originals",
+    cancel: "Cancel",
     config_load_failed: "config load failed",
     fatal: "FATAL",
 };
@@ -175,6 +183,10 @@ static ZH_CN: Texts = Texts {
     total: "总数",
     log: "日志：",
     running_in_place: "正在就地写入（原文件会被覆盖）。",
+    confirm_in_place_title: "确认覆盖原文件",
+    confirm_in_place_message: "这会覆盖输入目录中的原始文件，且无法撤销。是否继续？",
+    confirm_in_place_continue: "覆盖原文件",
+    cancel: "取消",
     config_load_failed: "配置加载失败",
     fatal: "严重错误",
 };

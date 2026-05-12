@@ -64,6 +64,7 @@ pub struct RunnerState {
     pub out_dir_name: String,
     pub state: Arc<RunState>,
     pub status: String,
+    confirm_in_place: bool,
 }
 
 impl Default for RunnerState {
@@ -77,6 +78,7 @@ impl Default for RunnerState {
             out_dir_name: "_modified".into(),
             state: Arc::new(RunState::default()),
             status: String::new(),
+            confirm_in_place: false,
         }
     }
 }
@@ -140,10 +142,10 @@ impl RunnerState {
                 .clicked()
             {
                 if self.in_place {
-                    // Soft confirm via status; destructive operation.
-                    self.status = t.running_in_place.into();
+                    self.confirm_in_place = true;
+                } else {
+                    self.start_run(ctx.clone(), t);
                 }
-                self.start_run(ctx.clone(), t);
             }
             if total > 0 {
                 let frac = if total > 0 {
@@ -154,6 +156,27 @@ impl RunnerState {
                 ui.add(egui::ProgressBar::new(frac).text(format!("{done}/{total}")));
             }
         });
+
+        if self.confirm_in_place {
+            egui::Window::new(t.confirm_in_place_title)
+                .collapsible(false)
+                .resizable(false)
+                .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
+                .show(ctx, |ui| {
+                    ui.label(t.confirm_in_place_message);
+                    ui.add_space(8.0);
+                    ui.horizontal(|ui| {
+                        if ui.button(t.cancel).clicked() {
+                            self.confirm_in_place = false;
+                        }
+                        if ui.button(t.confirm_in_place_continue).clicked() {
+                            self.confirm_in_place = false;
+                            self.status = t.running_in_place.into();
+                            self.start_run(ctx.clone(), t);
+                        }
+                    });
+                });
+        }
 
         if let Ok(cur) = self.state.current.lock() {
             if !cur.is_empty() && running {

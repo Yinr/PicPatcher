@@ -16,7 +16,7 @@ Two binaries from one Rust workspace:
 
 - `picpatcher` (CLI) — batch runner driven by a JSON config file.
 - `picpatcher-gui` (GUI) — visual editor (load base + overlay, drag to place,
-  export config) and integrated runner.
+  export config) and integrated runner with English/Simplified Chinese UI.
 
 ## Build
 
@@ -65,14 +65,17 @@ Run `picpatcher-gui`. Two tabs:
 - **Editor** — open base image + overlay; zoom the canvas for detail work;
   drag overlay on the canvas; nudge with arrow keys (`Shift` = 10 px);
   edit X/Y; Save / Save as config.
-- **Runner** — pick config and input dir; Run; live progress and error log.
+- **Runner** — pick config and input dir; Run; live progress and error log;
+  in-place overwrite mode requires a confirmation dialog.
+- **Language** — the GUI follows the system language by default and can be
+  switched manually from the top-right `EN / 简中` toggle.
 
 ## Notes
 
 - JPEG output uses quality 95.
 - Overlay with alpha is blended (Porter–Duff `over`).
-- First release supports a single overlay region. Multi-region, scale/rotate,
-  EXIF preservation are deliberately out of scope for v1.
+- PicPatcher currently supports one overlay region per config. Multi-region,
+  scale/rotate, EXIF preservation are deliberately out of scope for v1.
 
 ## Roadmap
 
