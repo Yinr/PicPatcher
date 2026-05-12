@@ -11,5 +11,5 @@ description = "Build helper for embedding PicPatcher Windows executable resource
 [lib]
 path = "src/lib.rs"
 
-[target.'cfg(windows)'.dependencies]
+[dependencies]
 winres = { workspace = true }

@@ -2,6 +2,10 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
+[![Release](https://github.com/Yinr/PicPatcher/actions/workflows/release.yml/badge.svg)](https://github.com/Yinr/PicPatcher/actions/workflows/release.yml)
+[![Latest Release](https://img.shields.io/github/v/release/Yinr/PicPatcher?label=release)](https://github.com/Yinr/PicPatcher/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Yinr/PicPatcher/total)](https://github.com/Yinr/PicPatcher/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows-blue)](https://github.com/Yinr/PicPatcher/releases)
 
 [English](./README.md) | [中文](./README_zh.md)
 
