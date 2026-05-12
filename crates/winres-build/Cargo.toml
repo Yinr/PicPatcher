@@ -1,0 +1,15 @@
+[package]
+name = "picpatcher-winres-build"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Build helper for embedding PicPatcher Windows executable resources."
+
+[lib]
+path = "src/lib.rs"
+
+[target.'cfg(windows)'.dependencies]
+winres = { workspace = true }

@@ -1,0 +1,24 @@
+[package]
+name = "picpatcher-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "PicPatcher CLI: batch-apply image overlays defined in a config file."
+keywords = ["image", "cli", "overlay", "batch"]
+categories = ["command-line-utilities", "multimedia::images"]
+
+[[bin]]
+name = "picpatcher"
+path = "src/main.rs"
+
+[dependencies]
+picpatcher-core = { path = "../core" }
+anyhow = { workspace = true }
+clap = { version = "4", features = ["derive"] }
+indicatif = "0.17"
+
+[build-dependencies]
+picpatcher-winres-build = { path = "../winres-build" }

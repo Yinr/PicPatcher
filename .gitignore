@@ -1,0 +1,22 @@
+# Rust
+/target
+**/*.rs.bk
+*.pdb
+
+# Cargo
+# Cargo.lock is kept for binaries (committed intentionally)
+
+# IDE / editors
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# OS junk
+Desktop.ini
