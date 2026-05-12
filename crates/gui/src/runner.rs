@@ -61,6 +61,7 @@ pub struct RunnerState {
     pub extensions: String,
     pub recursive: bool,
     pub in_place: bool,
+    pending_in_place: bool,
     pub out_dir_name: String,
     pub state: Arc<RunState>,
     pub status: String,
@@ -75,6 +76,7 @@ impl Default for RunnerState {
             extensions: DEFAULT_EXTENSIONS.join(","),
             recursive: true,
             in_place: false,
+            pending_in_place: false,
             out_dir_name: "_modified".into(),
             state: Arc::new(RunState::default()),
             status: String::new(),
@@ -119,7 +121,20 @@ impl RunnerState {
             ui.checkbox(&mut self.recursive, t.recursive);
         });
         ui.horizontal(|ui| {
-            ui.checkbox(&mut self.in_place, t.overwrite_originals);
+            let mut requested_in_place = self.in_place;
+            if ui
+                .checkbox(&mut requested_in_place, t.overwrite_originals)
+                .changed()
+            {
+                if requested_in_place {
+                    self.pending_in_place = true;
+                    self.confirm_in_place = true;
+                } else {
+                    self.in_place = false;
+                    self.pending_in_place = false;
+                    self.confirm_in_place = false;
+                }
+            }
             ui.add_enabled(
                 !self.in_place,
                 egui::TextEdit::singleline(&mut self.out_dir_name).hint_text(t.output_dir_name),
@@ -141,11 +156,7 @@ impl RunnerState {
                 )
                 .clicked()
             {
-                if self.in_place {
-                    self.confirm_in_place = true;
-                } else {
-                    self.start_run(ctx.clone(), t);
-                }
+                self.start_run(ctx.clone(), t);
             }
             if total > 0 {
                 let frac = if total > 0 {
@@ -167,12 +178,15 @@ impl RunnerState {
                     ui.add_space(8.0);
                     ui.horizontal(|ui| {
                         if ui.button(t.cancel).clicked() {
+                            self.pending_in_place = false;
                             self.confirm_in_place = false;
                         }
                         if ui.button(t.confirm_in_place_continue).clicked() {
+                            if self.pending_in_place {
+                                self.in_place = true;
+                                self.pending_in_place = false;
+                            }
                             self.confirm_in_place = false;
-                            self.status = t.running_in_place.into();
-                            self.start_run(ctx.clone(), t);
                         }
                     });
                 });
