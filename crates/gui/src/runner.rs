@@ -8,6 +8,8 @@ use picpatcher_core::{
     parse_extensions, run_batch, Config, DEFAULT_EXTENSIONS,
 };
 
+use crate::i18n::Texts;
+
 pub struct RunState {
     pub running: AtomicBool,
     pub done: AtomicUsize,
@@ -80,9 +82,9 @@ impl Default for RunnerState {
 }
 
 impl RunnerState {
-    pub fn ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+    pub fn ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, t: &Texts) {
         ui.horizontal(|ui| {
-            if ui.button("Choose config…").clicked() {
+            if ui.button(t.choose_config).clicked() {
                 if let Some(p) = rfd::FileDialog::new()
                     .add_filter("JSON", &["json"])
                     .pick_file()
@@ -93,11 +95,11 @@ impl RunnerState {
             if let Some(p) = &self.config_path {
                 ui.label(p.display().to_string());
             } else {
-                ui.label("(no config)");
+                ui.label(t.no_config);
             }
         });
         ui.horizontal(|ui| {
-            if ui.button("Choose input dir…").clicked() {
+            if ui.button(t.choose_input_dir).clicked() {
                 if let Some(p) = rfd::FileDialog::new().pick_folder() {
                     self.input_dir = Some(p);
                 }
@@ -105,20 +107,20 @@ impl RunnerState {
             if let Some(p) = &self.input_dir {
                 ui.label(p.display().to_string());
             } else {
-                ui.label("(no input dir)");
+                ui.label(t.no_input_dir);
             }
         });
 
         ui.horizontal(|ui| {
-            ui.label("Extensions:");
+            ui.label(t.extensions);
             ui.text_edit_singleline(&mut self.extensions);
-            ui.checkbox(&mut self.recursive, "Recursive");
+            ui.checkbox(&mut self.recursive, t.recursive);
         });
         ui.horizontal(|ui| {
-            ui.checkbox(&mut self.in_place, "Overwrite originals (in-place)");
+            ui.checkbox(&mut self.in_place, t.overwrite_originals);
             ui.add_enabled(
                 !self.in_place,
-                egui::TextEdit::singleline(&mut self.out_dir_name).hint_text("output dir name"),
+                egui::TextEdit::singleline(&mut self.out_dir_name).hint_text(t.output_dir_name),
             );
         });
 
@@ -133,15 +135,15 @@ impl RunnerState {
             if ui
                 .add_enabled(
                     can_run,
-                    egui::Button::new(if running { "Running…" } else { "▶ Run" }),
+                    egui::Button::new(if running { t.running } else { t.run }),
                 )
                 .clicked()
             {
                 if self.in_place {
                     // Soft confirm via status; destructive operation.
-                    self.status = "Running in-place (originals will be overwritten).".into();
+                    self.status = t.running_in_place.into();
                 }
-                self.start_run(ctx.clone());
+                self.start_run(ctx.clone(), t);
             }
             if total > 0 {
                 let frac = if total > 0 {
@@ -155,7 +157,7 @@ impl RunnerState {
 
         if let Ok(cur) = self.state.current.lock() {
             if !cur.is_empty() && running {
-                ui.label(format!("Current: {}", *cur));
+                ui.label(format!("{}: {}", t.current, *cur));
             }
         }
 
@@ -167,8 +169,14 @@ impl RunnerState {
                     egui::Color32::LIGHT_RED
                 },
                 format!(
-                    "Finished: {} ok / {} fail / {} total",
-                    summary.succeeded, summary.failed, summary.total
+                    "{}: {} {} / {} {} / {} {}",
+                    t.finished,
+                    summary.succeeded,
+                    t.ok,
+                    summary.failed,
+                    t.fail,
+                    summary.total,
+                    t.total
                 ),
             );
         }
@@ -177,7 +185,7 @@ impl RunnerState {
         }
 
         ui.separator();
-        ui.label("Log:");
+        ui.label(t.log);
         egui::ScrollArea::vertical().show(ui, |ui| {
             if let Ok(log) = self.state.log.lock() {
                 for line in log.iter() {
@@ -191,7 +199,7 @@ impl RunnerState {
         }
     }
 
-    fn start_run(&mut self, ctx: egui::Context) {
+    fn start_run(&mut self, ctx: egui::Context, t: &Texts) {
         let (Some(cfg_path), Some(input_dir)) = (self.config_path.clone(), self.input_dir.clone())
         else {
             return;
@@ -199,7 +207,7 @@ impl RunnerState {
         let cfg = match Config::load(&cfg_path) {
             Ok(c) => c,
             Err(e) => {
-                self.status = format!("config load failed: {e:#}");
+                self.status = format!("{}: {e:#}", t.config_load_failed);
                 return;
             }
         };
@@ -217,11 +225,12 @@ impl RunnerState {
             },
         };
         let state = self.state.clone();
+        let fatal = t.fatal;
         state.running.store(true, Ordering::SeqCst);
         thread::spawn(move || {
             let progress: Arc<dyn BatchProgress> = state.clone();
             if let Err(e) = run_batch(&cfg, &cfg_path, &opts, progress) {
-                state.log.lock().unwrap().push(format!("FATAL: {e:#}"));
+                state.log.lock().unwrap().push(format!("{fatal}: {e:#}"));
                 state.running.store(false, Ordering::SeqCst);
             }
             ctx.request_repaint();

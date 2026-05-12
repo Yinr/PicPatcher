@@ -21,6 +21,7 @@ thiserror = "1"
 walkdir = "2"
 rayon = "1"
 winres = "0.1"
+sys-locale = "0.3"
 
 [profile.release]
 lto = "thin"

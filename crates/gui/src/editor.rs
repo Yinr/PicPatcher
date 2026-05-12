@@ -4,6 +4,8 @@ use egui::{ColorImage, Key, Sense, TextureHandle, TextureOptions};
 use image::GenericImageView;
 use picpatcher_core::{Config, DEFAULT_EXTENSIONS};
 
+use crate::i18n::Texts;
+
 pub struct LoadedImage {
     pub path: PathBuf,
     pub width: u32,
@@ -59,13 +61,13 @@ fn load_to_texture(ctx: &egui::Context, path: &Path, name: &str) -> anyhow::Resu
 }
 
 impl EditorState {
-    pub fn ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+    pub fn ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, t: &Texts) {
         self.handle_keyboard_nudge(ctx);
 
         ui.horizontal(|ui| {
-            if ui.button("Open base image…").clicked() {
+            if ui.button(t.open_base_image).clicked() {
                 if let Some(p) = rfd::FileDialog::new()
-                    .add_filter("Images", DEFAULT_EXTENSIONS)
+                    .add_filter(t.images, DEFAULT_EXTENSIONS)
                     .pick_file()
                 {
                     match load_to_texture(ctx, &p, "base") {
@@ -73,14 +75,14 @@ impl EditorState {
                             self.base = Some(img);
                             self.status.clear();
                         }
-                        Err(e) => self.status = format!("base load failed: {e:#}"),
+                        Err(e) => self.status = format!("{}: {e:#}", t.base_load_failed),
                     }
                 }
             }
-            if ui.button("Open overlay…").clicked() {
+            if ui.button(t.open_overlay).clicked() {
                 if let Some(p) = rfd::FileDialog::new()
-                    .add_filter("PNG (recommended)", &["png"])
-                    .add_filter("Images", DEFAULT_EXTENSIONS)
+                    .add_filter(t.png_recommended, &["png"])
+                    .add_filter(t.images, DEFAULT_EXTENSIONS)
                     .pick_file()
                 {
                     match load_to_texture(ctx, &p, "overlay") {
@@ -89,24 +91,24 @@ impl EditorState {
                             self.overlay_was_relative = false;
                             self.status.clear();
                         }
-                        Err(e) => self.status = format!("overlay load failed: {e:#}"),
+                        Err(e) => self.status = format!("{}: {e:#}", t.overlay_load_failed),
                     }
                 }
             }
             ui.separator();
-            if ui.button("Load config…").clicked() {
+            if ui.button(t.load_config).clicked() {
                 if let Some(p) = rfd::FileDialog::new()
                     .add_filter("JSON", &["json"])
                     .pick_file()
                 {
-                    self.load_config(ctx, &p);
+                    self.load_config(ctx, &p, t);
                 }
             }
-            if ui.button("Save config…").clicked() {
-                self.save_config(false);
+            if ui.button(t.save_config).clicked() {
+                self.save_config(false, t);
             }
-            if ui.button("Save config as…").clicked() {
-                self.save_config(true);
+            if ui.button(t.save_config_as).clicked() {
+                self.save_config(true, t);
             }
         });
 
@@ -116,11 +118,11 @@ impl EditorState {
             .resizable(true)
             .default_width(280.0)
             .show_inside(ui, |ui| {
-                ui.heading("Parameters");
+                ui.heading(t.parameters);
                 ui.add_space(4.0);
-                ui.label("Canvas zoom:");
+                ui.label(t.canvas_zoom);
                 ui.horizontal(|ui| {
-                    if ui.button("Fit").clicked() {
+                    if ui.button(t.fit).clicked() {
                         self.zoom = 1.0;
                     }
                     if ui.button("100%").clicked() {
@@ -133,40 +135,38 @@ impl EditorState {
                         .logarithmic(true)
                         .show_value(false),
                 );
-                ui.small(
-                    "Drag overlay to move. Arrow keys nudge by 1 px; Shift+Arrow nudges by 10 px.",
-                );
+                ui.small(t.drag_hint);
                 ui.add_space(8.0);
-                ui.label("Overlay X (px):");
+                ui.label(t.overlay_x);
                 ui.add(egui::DragValue::new(&mut self.x).speed(1.0));
-                ui.label("Overlay Y (px):");
+                ui.label(t.overlay_y);
                 ui.add(egui::DragValue::new(&mut self.y).speed(1.0));
                 ui.add_space(8.0);
                 if let Some(b) = &self.base {
-                    ui.label(format!("Base: {} x {}", b.width, b.height));
+                    ui.label(format!("{}: {} x {}", t.base, b.width, b.height));
                 }
                 if let Some(o) = &self.overlay {
-                    ui.label(format!("Overlay: {} x {}", o.width, o.height));
-                    ui.label(format!("Path: {}", o.path.display()));
+                    ui.label(format!("{}: {} x {}", t.overlay, o.width, o.height));
+                    ui.label(format!("{}: {}", t.path, o.path.display()));
                 }
                 ui.add_space(8.0);
                 if !self.status.is_empty() {
                     ui.colored_label(egui::Color32::LIGHT_RED, &self.status);
                 }
                 if let Some(p) = &self.config_path {
-                    ui.label(format!("Config: {}", p.display()));
+                    ui.label(format!("{}: {}", t.config, p.display()));
                 }
             });
 
         egui::CentralPanel::default().show_inside(ui, |ui| {
-            self.canvas(ui);
+            self.canvas(ui, t);
         });
     }
 
-    fn canvas(&mut self, ui: &mut egui::Ui) {
+    fn canvas(&mut self, ui: &mut egui::Ui, t: &Texts) {
         let Some(base) = &self.base else {
             ui.centered_and_justified(|ui| {
-                ui.label("Open a base image to start.");
+                ui.label(t.open_base_to_start);
             });
             return;
         };
@@ -182,11 +182,11 @@ impl EditorState {
         egui::ScrollArea::both()
             .auto_shrink([false, false])
             .show(ui, |ui| {
-                self.canvas_contents(ui, scale, disp);
+                self.canvas_contents(ui, scale, disp, t);
             });
     }
 
-    fn canvas_contents(&mut self, ui: &mut egui::Ui, scale: f32, disp: egui::Vec2) {
+    fn canvas_contents(&mut self, ui: &mut egui::Ui, scale: f32, disp: egui::Vec2, t: &Texts) {
         let Some(base) = &self.base else { return };
 
         let (rect, _resp) = ui.allocate_exact_size(disp, Sense::hover());
@@ -237,7 +237,7 @@ impl EditorState {
             self.clamp_overlay_position();
         } else {
             ui.allocate_ui_at_rect(rect, |ui| {
-                ui.label("Open an overlay image to position it.");
+                ui.label(t.open_overlay_to_position);
             });
         }
     }
@@ -291,7 +291,7 @@ impl EditorState {
         self.y = self.y.clamp(min_y, max_y);
     }
 
-    fn load_config(&mut self, ctx: &egui::Context, path: &Path) {
+    fn load_config(&mut self, ctx: &egui::Context, path: &Path, t: &Texts) {
         match Config::load(path) {
             Ok(cfg) => {
                 self.x = cfg.x;
@@ -302,18 +302,18 @@ impl EditorState {
                     Ok(img) => {
                         self.overlay = Some(img);
                         self.overlay_was_relative = !cfg.overlay.is_absolute();
-                        self.status = format!("Loaded {}", path.display());
+                        self.status = format!("{} {}", t.loaded, path.display());
                     }
-                    Err(e) => self.status = format!("overlay load failed: {e:#}"),
+                    Err(e) => self.status = format!("{}: {e:#}", t.overlay_load_failed),
                 }
             }
-            Err(e) => self.status = format!("load failed: {e:#}"),
+            Err(e) => self.status = format!("{}: {e:#}", t.load_failed),
         }
     }
 
-    fn save_config(&mut self, as_new: bool) {
+    fn save_config(&mut self, as_new: bool, t: &Texts) {
         let Some(overlay) = &self.overlay else {
-            self.status = "No overlay loaded.".into();
+            self.status = t.no_overlay_loaded.into();
             return;
         };
         let target = if as_new || self.config_path.is_none() {
@@ -342,9 +342,9 @@ impl EditorState {
         match cfg.save(&target) {
             Ok(()) => {
                 self.config_path = Some(target.clone());
-                self.status = format!("Saved {}", target.display());
+                self.status = format!("{} {}", t.saved, target.display());
             }
-            Err(e) => self.status = format!("save failed: {e:#}"),
+            Err(e) => self.status = format!("{}: {e:#}", t.save_failed),
         }
     }
 }

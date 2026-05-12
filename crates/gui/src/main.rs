@@ -2,6 +2,8 @@
 
 mod app;
 mod editor;
+mod fonts;
+mod i18n;
 mod runner;
 
 use app::PicPatcherApp;
@@ -21,6 +23,7 @@ fn main() -> eframe::Result<()> {
         "PicPatcher",
         native_options,
         Box::new(|cc| {
+            fonts::install_fonts(&cc.egui_ctx);
             egui_extras::install_image_loaders(&cc.egui_ctx);
             Ok(Box::new(PicPatcherApp::new(cc)))
         }),
